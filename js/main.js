@@ -106,258 +106,439 @@
 
 // 6.1. Продолжаем предыдущий таск. Реализуйте логику корзины. У вас есть карточка с товаром, нажав на кнопку «добавить в корзину» добавляйте товар в local storage, с возможностью указать количество товаров. Также в карточке должна быть кнопка, УДАЛИТЬ ИЗ КОРЗИНЫ, нажав на которую, товар удаляется из корзины, также на странице должна быть кнопка ОЧИСТИТЬ КОРЗИНУ, при нажатии на эту кнопку, все товары должны быть удалены из хранилища
 
-const PRODUCTS_API = 'http://localhost:8000/products';
+//! account logic
+//! show modal logic
+let registerUserModalBtn = document.querySelector("#registerUser-modal");
+let loginUserModalBtn = document.querySelector("#loginUser-modal");
+let registerUserModalBlock = document.querySelector("#registerUser-block");
+let loginUserModalBlock = document.querySelector("#loginUser-block");
+let registerUserBtn = document.querySelector("#registerUser-btn");
+let loginUserBtn = document.querySelector("#loginUser-btn");
+let logoutUserBtn = document.querySelector("#logoutUser-btn");
+let closeRegisterModalBtn = document.querySelector(".btn-close");
+//? modal sign up
+registerUserModalBtn.addEventListener("click", () => {
+  registerUserModalBlock.setAttribute("style", "display: flex !important;");
+  registerUserBtn.setAttribute("style", "display: flex !important;");
+  loginUserModalBlock.setAttribute("style", "display: none !important");
+  loginUserBtn.setAttribute("style", "display: none !important");
+});
+//? modal login
+loginUserModalBtn.addEventListener("click", () => {
+  registerUserModalBlock.setAttribute("style", "display: none !important;");
+  registerUserBtn.setAttribute("style", "display: none !important;");
+  loginUserModalBlock.setAttribute("style", "display: flex !important");
+  loginUserBtn.setAttribute("style", "display: flex !important");
+});
 
-async function render() {
-       let productsList = document.querySelector('#container');
-       productsList.innerHTML = '';
-       let res = await fetch(PRODUCTS_API);
-       let products = await res.json();
-       products.forEach(item => {
-              productsList.innerHTML += `<div class="card m-5" style="width: 18rem;">
-                     <img src="${item.image}" class="card-img-top" alt="error:(" height="200">
-                     <div class="card-body">
-                            <h5 class="card-title">${item.name}</h5><hr>
-                            <p class="card-text"><b>Brand:</b> ${item.brand}</p>
-                            <p class="card-text"><b>Description:</b> ${item.description}</p>
-                            <p class="card-text"><b>Color:</b> ${item.color}</p>
-                            <p class="card-text"><b>Price:</b> ${item.price} $</p>
-                            <div class="d-flex flex-column justify-content-end">
-                            <a href="#" class="btn btn-success mb-2 btn-add" id="add-${item.id}">Add to shopping cart</a>
-                            <a href="#" class="btn btn-info mb-2 btn-upd" id="upd-${item.id}" 
-                            data-bs-toggle="modal"
-                            data-bs-target="#exampleModal"
-                            >Update</a>
-                            </div>
-                     </div>
-            </div>`
-       });
+//? request json serv "users"
+const USERS_API = "http://localhost:8000/users";
 
-       addToCartShopEvent();
-       
-       // cart shop **********************************************************************************
-       let shopCart = document.querySelector('.cart');
-       shopCart.innerHTML = '';
-       let productsCartShop = getProductsFromStorage();
-       // console.log(productsCartShop);
-       productsCartShop.forEach(item => {
-              shopCart.innerHTML += `<div class="card m-5 w-75 d-flex" style="width: 18rem;">
-                     <div class="card-body d-flex">
-                            <img src="${item.image}" class="img-fluid img-thumbnail w-25 h-25" alt="error:(">
-                            <div class="container">
-                                   <h5 class="card-title">${item.name}</h5>
-                                   <div class="d-flex justify-content-end">
-                                   <a href="#" class="btn btn-danger btn-del" id="del-${item.id}">Delete </a>
-                                   </div>
-                                   <hr>
-                                   <p class="card-text">${item.brand}</p>
-                                   <p class="card-text">color: ${item.color}</p>
-                                   <p class="card-text">price: ${item.price} $</p>
-                                   <p class="card-text">count: ${item.count}
-                                   <p class="card-text">subprice: ${item.price*item.count} $</p>
-                                   <a href="#" class="btn btn-outline-success btn-add-count" id="del-${item.id}">+</a>
-                                   <a href="#" class="btn btn-outline-danger btn-del-count" id="del-${item.id}">-</a>
-                                   
-                            </div>
-                     </div>
-            </div>`
-       });
+//? register inputs group
+let usernameInp = document.querySelector("#reg-username");
+let ageInp = document.querySelector("#reg-age");
+let passwordInp = document.querySelector("#reg-password");
+let passwordConfirmInp = document.querySelector("#reg-passwordConfirm");
+let isAdminInp = document.querySelector("#isAdmin");
+//! register inputs end
 
-       updateProdEvent();
-       deleteToCartShopEvent();
-       addCountProdEvent();
-       delCountProdEvent();
-       totalPrice();
-       if (productsCartShop.length == 0) return;
-
-};
-render()
-
-function initStorage() {
-       if (!localStorage.getItem('products-data')) {
-              localStorage.setItem('products-data', '[]');
-       };
-};
-initStorage();
-
-async function setToLocalStorage(products) {
-       localStorage.setItem('products-data', JSON.stringify(products))
-};
-
-function getProductsFromStorage() {
-       let products = JSON.parse(localStorage.getItem('products-data'));
-       return products;
-};
-
-async function addProdToCart(e) {
-       let productId = e.target.id.split('-')[1];
-       // console.log(productId);
-       let res = await fetch(PRODUCTS_API);
-       let products = await res.json();
-       // console.log(products);
-       let prodObj = await products.find(item => item.id == productId)
-       // console.log(prodObj);
-       prodObj.count = 1;
-       let product = getProductsFromStorage();
-       product.push(prodObj);
-       setToLocalStorage(product)
-       render();
-};
-
-function addToCartShopEvent() {
-       let btnAddToLocalStorage = document.querySelectorAll('.btn-add');
-       btnAddToLocalStorage.forEach(item => item.addEventListener('click', addProdToCart));
-};
-
-function deleteProdToCart(e) {
-       let productId = e.target.id.split('-')[1];
-       // console.log(productId);
-       let products = getProductsFromStorage();
-       // console.log(products);
-       products = products.filter(item => item.id != productId)
-       setToLocalStorage(products);
-       render();
-};
-
-function deleteToCartShopEvent() {
-       let btnClearToLocalStorage = document.querySelectorAll('.btn-del');
-       // console.log(btnClearToLocalStorage);
-       btnClearToLocalStorage.forEach(item => item.addEventListener('click', deleteProdToCart));
-};
-
-function addCountProd(e) {
-       let productId = e.target.id.split('-')[1];
-       // console.log(productId);
-       let products = getProductsFromStorage();
-       let productObj = products.find(item => item.id == productId);
-       // console.log(productObj);
-       productObj.count += 1
-       setToLocalStorage(products)
-       render()
-};
-
-function addCountProdEvent() {
-       let btnAddCountProd = document.querySelectorAll('.btn-add-count');
-       // console.log(btnAddCountProd);
-       btnAddCountProd.forEach(item => item.addEventListener('click', addCountProd))
+//* sign up logic
+async function checkUniqueUsername(username) {
+  let res = await fetch(USERS_API);
+  let users = await res.json();
+  return users.some((i) => i.username === username);
 }
 
-function delCountProd(e) {
-       let productId = e.target.id.split('-')[1];
-       // console.log(productId);
-       let products = getProductsFromStorage();
-       let productObj = products.find(item => item.id == productId);
-       // console.log(productObj);
+async function registerUser() {
+  if (
+    !usernameInp.value.trim() ||
+    !ageInp.value.trim() ||
+    !passwordInp.value.trim() ||
+    !passwordConfirmInp.value.trim()
+  ) {
+    alert("Some inputs are empty");
+    return;
+  }
+  let uniqueUsername = await checkUniqueUsername(usernameInp.value);
+  if (uniqueUsername) {
+    alert("User with this username already exists!");
+    return;
+  }
+  if (passwordInp.value !== passwordConfirmInp.value) {
+    alert("Passwords don't match");
+    return;
+  }
+  let userObj = {
+    username: usernameInp.value,
+    age: ageInp.value,
+    password: passwordInp.value,
+    isAdmin: isAdminInp.checked,
+  };
+  fetch(USERS_API, {
+    method: "POST",
+    body: JSON.stringify(userObj),
+    headers: {
+      "Content-Type": "application/json;charset=utf-8",
+    },
+  });
 
-       if (productObj.count === 1) {
-              return deleteProdToCart(e);
-       } else productObj.count -= 1
-       setToLocalStorage(products);
-       render();
-};
+  console.log(`${userObj.username} was registered`);
+  usernameInp.value = "";
+  ageInp.value = "";
+  passwordInp.value = "";
+  passwordConfirmInp.value = "";
+  isAdminInp.checked = false;
+  closeRegisterModalBtn.click();
+}
 
-function delCountProdEvent() {
-       let btnAddCountProd = document.querySelectorAll('.btn-del-count');
-       // console.log(btnAddCountProd);
-       btnAddCountProd.forEach(item => item.addEventListener('click', delCountProd))
-};
+registerUserBtn.addEventListener("click", registerUser);
+//* sign up logic end
 
-function totalPrice() {
-       let totalPrice = document.querySelector('#price');
-       let products = getProductsFromStorage();
-       let rest = 0;
-       products.forEach(item => {
-              return rest += item.price * item.count;
-       });
-       totalPrice.innerHTML = `Total: ${rest} `;
-};
+//* login logic
+let showUsername = document.querySelector("#showUsername");
 
-function clearLocalStorage() {
-       localStorage.clear();
-       initStorage();
-       render()
-};
+function checkLoginLogoutStatus() {
+  let user = localStorage.getItem("user");
+  if (!user) {
+    loginUserModalBtn.parentNode.style.display = "block";
+    registerUserModalBtn.parentNode.style.display = "block";
+    logoutUserBtn.parentNode.style.display = "none";
 
-let clearBtnLocal = document.querySelector('#btn-clear-local-storage');
-// console.log(clearBtnLocal);
-clearBtnLocal.addEventListener('click', clearLocalStorage);
+    showUsername.innerText = `No user`;
+  } else {
+    loginUserModalBtn.parentNode.style.display = "none";
+    registerUserModalBtn.parentNode.style.display = "none";
+    logoutUserBtn.parentNode.style.display = "block";
+    showUsername.innerText = JSON.parse(user).username;
+  }
+  showAdminPanel();
+}
+checkLoginLogoutStatus();
 
-// group inputs
-let inpNameProd = document.querySelector('#inp-prod-name');
-let inpBrandProd = document.querySelector('#inp-prod-brand');
-let inpPriceProd = document.querySelector('#inp-prod-price');
-let inpDescProd = document.querySelector('#inp-prod-desc');
-let inpImageProd = document.querySelector('#inp-prod-image');
-let inpColorProd = document.querySelector('#inp-prod-color');
-// console.log(inpNameProd, inpBrandProd, inpPriceProd, inpDescProd, inpImageProd, inpColorProd);
+let loginUsernameInp = document.querySelector("#login-username");
+let loginPasswordInp = document.querySelector("#login-password");
+function checkUserInUsers(username, users) {
+  return users.some((i) => i.username === username);
+}
 
-async function updateProd(e) {
+function checkUserPassword(user, password) {
+  return user.password === password;
+}
 
-       let productId = e.target.id.split('-')[1];
-       // console.log(productId);
+function setUserToLocalStorage(username, isAdmin) {
+  localStorage.setItem(
+    "user",
+    JSON.stringify({
+      username,
+      isAdmin,
+    })
+  );
+}
 
-       let res = await fetch(PRODUCTS_API);
-       let products = await res.json();
+async function loginUser() {
+  if (!loginUsernameInp.value.trim() || !loginPasswordInp.value.trim()) {
+    alert("Some inputs are empty");
+    return;
+  }
+  let res = await fetch(USERS_API);
+  let users = await res.json();
+  if (!checkUserInUsers(loginUsernameInp.value, users)) {
+    alert("User not found");
+    return;
+  }
+  let userObj = users.find((i) => i.username === loginUsernameInp.value);
+  if (!checkUserPassword(userObj, loginPasswordInp.value)) {
+    alert("Wrong password");
+    return;
+  }
+  setUserToLocalStorage(userObj.username, userObj.isAdmin);
 
-       let productObj = products.find(item => item.id == productId);
-       // console.log(productObj);
+  console.log(`${userObj.username} was logged in`);
+  loginUsernameInp.value = "";
+  loginPasswordInp.value = "";
+  checkLoginLogoutStatus();
+  closeRegisterModalBtn.click();
+  render();
+}
 
-       inpNameProd.value = productObj.name;
-       inpBrandProd.value = productObj.brand;
-       inpPriceProd.value = productObj.price;
-       inpDescProd.value = productObj.description;
-       inpImageProd.value = productObj.image;
-       inpColorProd.value = productObj.color;
+loginUserBtn.addEventListener("click", loginUser);
+//* login logic end
+//* logout logic
 
-       let btnSave = document.querySelector('.save-changes');
-       // console.log(btnSave);
-       btnSave.setAttribute('id', productId);
-       btnSave.addEventListener('click', saveChanges)
-};
+logoutUserBtn.addEventListener("click", () => {
+  localStorage.removeItem("user");
+  render();
+});
 
-function updateProdEvent() {
-       let btnUpdProd = document.querySelectorAll('.btn-upd');
-       btnUpdProd.forEach(item => item.addEventListener('click', updateProd));
-};
+//* logout logic end
+//!account logic
+
+function checkUserForProductCreate() {
+  let user = JSON.parse(localStorage.getItem("user"));
+  if (user) return user.isAdmin;
+  return false;
+}
+
+function showAdminPanel() {
+  let adminPanel = document.querySelector("#admin-panel");
+  if (!checkUserForProductCreate()) {
+    adminPanel.setAttribute("style", "display: none !important");
+  } else {
+    adminPanel.setAttribute("style", "display: flex !important");
+  }
+}
+//! product logic
+//* create
+let productTitle = document.querySelector("#product-title");
+let productPrice = document.querySelector("#product-price");
+let productImage = document.querySelector("#product-image");
+let productDescription = document.querySelector("#product-desc");
+let productCategory = document.querySelector("#product-category");
+let addProductBtn = document.querySelector(".add-product-btn");
+
+const PRODUCTS_API = "http://localhost:8000/products";
+
+async function createProduct() {
+  if (
+    !productTitle.value.trim() ||
+    !productPrice.value.trim() ||
+    !productImage.value.trim() ||
+    !productDescription.value.trim() ||
+    !productCategory.value.trim()
+  ) {
+    alert("Some inputs are empty");
+    return;
+  }
+
+  let productObj = {
+    title: productTitle.value,
+    price: productPrice.value,
+    image: productImage.value,
+    description: productDescription.value,
+    category: productCategory.value,
+  };
+  await fetch(PRODUCTS_API, {
+    method: "POST",
+    body: JSON.stringify(productObj),
+    headers: {
+      "Content-Type": "application/json;charset=utf-8",
+    },
+  });
+  productTitle.value = "";
+  productPrice.value = "";
+  productImage.value = "";
+  productDescription.value = "";
+  productCategory.value = "";
+  render();
+}
+
+addProductBtn.addEventListener("click", createProduct);
+//* create logic end
+//* render logic
+
+let currentPage = 1;
+let search = "";
+let category = "";
+
+async function render() {
+  let productsList = document.querySelector("#products-list");
+  productsList.innerHTML = "";
+  let requestAPI = `${PRODUCTS_API}?q=${search}&category=${category}&_page=${currentPage}&_limit=2`;
+  if (!category) {
+    requestAPI = `${PRODUCTS_API}?q=${search}&_page=${currentPage}&_limit=2`;
+  }
+  let res = await fetch(requestAPI);
+  let products = await res.json();
+  products.forEach((i) => {
+    productsList.innerHTML += `
+    <div class="card m-5" style="width: 18rem;">
+      <img src="${i.image}" class="card-img-top" alt="error">
+        <div class="card-body">
+            <h5 class="card-title">${i.title}</h5>
+            <p class="card-text">${i.description}</p>
+            <p class="card-text">${i.category}</p>
+            <p class="card-text">${i.price}</p>
+            ${
+              checkUserForProductCreate()
+                ? `<a href="#" class="btn btn-outline-dark btn-edit" id="edit-${i.id}">EDIT</a>
+              <a href="#" class="btn btn-outline-danger btn-delete" id="del-${i.id}">DELETE</a>`
+                : ""
+            }
+        </div>
+    </div>
+    `;
+  });
+
+  if (products.lenth === 0) return;
+  addCategoryToDropDownMenu();
+  addDeleteEvent();
+  addEditEvent();
+}
+render();
+//* render logic end
+
+async function addCategoryToDropDownMenu() {
+  let res = await fetch(PRODUCTS_API);
+  let data = await res.json();
+  let categories = new Set(data.map((i) => i.category));
+  let categoriesList = document.querySelector(".dropdown-menu");
+  categoriesList.innerHTML = `<li><a class="dropdown-item" href="#">ALL</a></li>`;
+  categories.forEach((i) => {
+    categoriesList.innerHTML += `<li><a class="dropdown-item" href="#">${i}</a></li>`;
+  });
+  addClickEventOnDropdownItem();
+}
+
+//* delete product logic
+async function deleteProduct(e) {
+  let productId = e.target.id.split("-")[1];
+  await fetch(`${PRODUCTS_API}/${productId}`, {
+    method: "DELETE",
+  });
+  render();
+}
+
+function addDeleteEvent() {
+  let deleteProductBtn = document.querySelectorAll(".btn-delete");
+  deleteProductBtn.forEach((i) => i.addEventListener("click", deleteProduct));
+}
+//* delete product logic end
+// update
+let saveChangesBtn = document.querySelector(".save-changes-btn");
+
+function checkCreateAndSaveBtn() {
+  if (saveChangesBtn.id) {
+    addProductBtn.setAttribute("style", "display: none;");
+    saveChangesBtn.setAttribute("style", "display: block;");
+  } else {
+    addProductBtn.setAttribute("style", "display: block;");
+    saveChangesBtn.setAttribute("style", "display: none;");
+  }
+}
+checkCreateAndSaveBtn();
+
+async function addProductDataToForm(e) {
+  let productId = e.target.id.split("-")[1];
+
+  let res = await fetch(`${PRODUCTS_API}/${productId}`);
+  let productObj = await res.json();
+  console.log(productObj);
+
+  productTitle.value = productObj.title;
+  productPrice.value = productObj.price;
+  productDescription.value = productObj.description;
+  productImage.value = productObj.image;
+  productCategory.value = productObj.category;
+
+  saveChangesBtn.setAttribute("id", productObj.id);
+
+  checkCreateAndSaveBtn();
+}
+
+function addEditEvent() {
+  let editProductBtn = document.querySelectorAll(".btn-edit");
+  editProductBtn.forEach((item) =>
+    item.addEventListener("click", addProductDataToForm)
+  );
+}
 
 async function saveChanges(e) {
-       let productId = e.target.id
-       // console.log(productId);
+  let updatedProductObj = {
+    id: e.target.id,
+    title: productTitle.value,
+    price: productPrice.value,
+    desc: productDescription.value,
+    image: productImage.value,
+    category: productCategory.value,
+  };
 
-       let res = await fetch(PRODUCTS_API);
-       let products = await res.json();
+  await fetch(`${PRODUCTS_API}/${e.target.id}`, {
+    method: "PUT",
+    body: JSON.stringify(updatedProductObj),
+    headers: {
+      "Content-Type": "application/json;charset=utf-8",
+    },
+  });
 
-       let productObj = products.find(item => item.id == productId);
-       // console.log(productObj);
+  productTitle.value = "";
+  productPrice.value = "";
+  productDesc.value = "";
+  productImage.value = "";
+  productCategory.value = "";
 
-       productObj.name = inpNameProd.value;
-       productObj.brand = inpBrandProd.value;
-       productObj.price = inpPriceProd.value;
-       productObj.description = inpDescProd.value;
-       productObj.image = inpImageProd.value;
-       productObj.color = inpColorProd.value;
+  saveChangesBtn.removeAttribute("id");
 
-       fetch(`${PRODUCTS_API}/${productId}`, {
-              method: 'PATCH',
-              body: JSON.stringify(productObj),
-              headers: {
-                     'Content-Type': 'application/json;charset=utf-8'
-              }
-       })
+  checkCreateAndSaveBtn();
 
-       inpNameProd.value = '';
-       inpBrandProd.value = '';
-       inpPriceProd.value = '';
-       inpDescProd.value = '';
-       inpImageProd.value = '';
-       inpColorProd.value = '';
+  render();
+}
 
-       let btnCloseChanges = document.querySelector('.btn-close');
-       btnCloseChanges.click();
+saveChangesBtn.addEventListener("click", saveChanges);
+//* update product logic end
+//* filtering
+function filterOnCategory(e) {
+  console.log("hello");
+  let categoryText = e.target.innerText;
+  if (categoryText == "ALL") {
+    category = "";
+  } else {
+    category = categoryText;
+  }
+  render();
+}
 
-       e.target.removeAttribute('id');
-       render();
-};
+function addClickEventOnDropdownItem() {
+  let categoryItems = document.querySelectorAll(".dropdown-item");
+  categoryItems.forEach((i) => i.addEventListener("click", filterOnCategory));
+}
+
+//* search logic
+let searchInp = document.querySelector("#search-inp");
+searchInp.addEventListener("input", () => {
+  search = searchInp.value;
+  currentPage = 1;
+  render();
+});
+//* search logic end
+//* pagination logic
+let prevPageBtn = document.querySelector("#prev-page-btn");
+let nextPageBtn = document.querySelector("#next-page-btn");
+
+async function getPagesCount() {
+  let res = await fetch(`${PRODUCTS_API}`);
+  let products = await res.json();
+  let pagesCount = Math.ceil(products.length / 2);
+  return pagesCount;
+}
+async function checkPages() {
+  let maxPagesNum = await getPagesCount();
+  if (currentPage === 1) {
+    prevPageBtn.setAttribute("style", "display: none");
+    nextPageBtn.setAttribute("style", "display: block");
+  }
+  else if(currentPage === maxPagesNum) {
+    prevPageBtn.setAttribute("style", "display: block");
+    nextPageBtn.setAttribute("style", "display: none");
+  }
+  else {
+    prevPageBtn.setAttribute("style", "display: block");
+    nextPageBtn.setAttribute("style", "display: block");
+  }
+}
+checkPages();
+
+prevPageBtn.addEventListener('click', () => {
+  currentPage --;
+  checkPages()
+  render()
+})
+nextPageBtn.addEventListener('click', () => {
+  currentPage ++;
+  checkPages()
+  render()
+})
+//* pagination logic end
+//! product logic end
 
 
 // Super Task
